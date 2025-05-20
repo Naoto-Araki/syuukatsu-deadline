@@ -1,67 +1,83 @@
-// 毎日正午(12:00)と18:00に締切チェックアラームを発火する関数
+// 毎日指定時刻にアラームを発火する関数
 function scheduleDailyAlarm(name, hour, minute = 0) {
   const now = new Date();
-  const next = new Date();
-  next.setHours(hour, minute, 0, 0);
-  if (next.getTime() <= now.getTime()) {
-    next.setDate(next.getDate() + 1);
+  const when = new Date();
+  when.setHours(hour, minute, 0, 0);
+  if (when.getTime() <= now.getTime()) {
+    when.setDate(when.getDate() + 1);
   }
-  chrome.alarms.create(name, { when: next.getTime(), periodInMinutes: 24 * 60 });
+  chrome.alarms.create(name, { when: when.getTime(), periodInMinutes: 24 * 60 });
 }
 
-// インストール時にアラームをスケジュール
-chrome.runtime.onInstalled.addListener(() => {
-  scheduleDailyAlarm("checkDeadlinesNoon", 12);
-  scheduleDailyAlarm("checkDeadlinesEvening", 18);
-});
-
-// ブラウザ起動時にもアラームを再スケジュール
-chrome.runtime.onStartup.addListener(() => {
-  scheduleDailyAlarm("checkDeadlinesNoon", 12);
-  scheduleDailyAlarm("checkDeadlinesEvening", 18);
-});
-
-// アラーム発火時に締切をチェックして通知を表示
-chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (!alarm.name.startsWith("checkDeadlines")) return;
+// 通知処理を共通化
+async function notifyDeadlines(alarmName) {
   const { deadlines = [] } = await chrome.storage.local.get("deadlines");
   const today = new Date().toISOString().split("T")[0];
 
   deadlines.forEach(d => {
-    const diff = new Date(d.date) - new Date(today);
-    if (diff >= 0 && diff <= 86400000) {
+    const diffDays = (new Date(d.date).getTime() - new Date(today).getTime()) / (1000 * 60 * 60 * 24);
+    if ((alarmName === "alertDeadlineTomorrowNoon" || alarmName === "alertDeadlineTomorrowEvening") && diffDays === 1) {
       chrome.notifications.create({
         type: 'basic',
         iconUrl: 'icon.png',
-        title: '締切が近い！',
-        message: `${d.company} "${d.title}" が締切日の前後に該当します！`,
+        title: '締切が明日です',
+        message: `${d.company} 「${d.title}」 の締切は明日です！
+URL: ${d.url}`,
+        requireInteraction: true,
+        priority: 2
+      });
+    } else if (alarmName === "alertDeadlineTodayMorning" && diffDays === 0) {
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icon.png',
+        title: '締切が本日です',
+        message: `${d.company} 「${d.title}」 の締切は本日です！
+URL: ${d.url}`,
+        requireInteraction: true,
         priority: 2
       });
     }
   });
+}
+
+// 過去の通知を起動時にチェックして発火（Chrome未起動時のアラーム逃しを補填）
+function checkMissedAlarms() {
+  const now = new Date();
+  const hour = now.getHours();
+  if (hour >= 18) {
+    notifyDeadlines("alertDeadlineTomorrowNoon");
+    notifyDeadlines("alertDeadlineTomorrowEvening");
+    notifyDeadlines("alertDeadlineTodayMorning");
+  } else if (hour >= 12) {
+    notifyDeadlines("alertDeadlineTomorrowNoon");
+    notifyDeadlines("alertDeadlineTodayMorning");
+  } else if (hour >= 10) {
+    notifyDeadlines("alertDeadlineTodayMorning");
+  }
+}
+
+// アラームスケジュール設定関数
+function setupAlarms() {
+  // 前日の12:00 と 18:00
+  scheduleDailyAlarm("alertDeadlineTomorrowNoon", 12);
+  scheduleDailyAlarm("alertDeadlineTomorrowEvening", 18);
+  // 当日の10:00
+  scheduleDailyAlarm("alertDeadlineTodayMorning", 10);
+}
+
+// インストール時と起動時にアラーム設定 & ミスチェック
+chrome.runtime.onInstalled.addListener(() => {
+  setupAlarms();
+  checkMissedAlarms();
+});
+chrome.runtime.onStartup.addListener(() => {
+  setupAlarms();
+  checkMissedAlarms();
 });
 
-// // 拡張機能インストール時にアラームを設定（1時間ごとにチェック）
-// chrome.runtime.onInstalled.addListener(() => {
-//   chrome.alarms.create("checkDeadlines", { periodInMinutes: 60 });
-// });
-
-// // アラーム発火時に締切が近いものを通知
-// chrome.alarms.onAlarm.addListener(async (alarm) => {
-//   if (alarm.name !== "checkDeadlines") return;
-//   const { deadlines = [] } = await chrome.storage.local.get("deadlines");
-//   const today = new Date().toISOString().split("T")[0];
-
-//   deadlines.forEach(d => {
-//     const diff = new Date(d.date) - new Date(today);
-//     if (diff <= 86400000 && diff >= 0) {
-//       chrome.notifications.create({
-//         type: 'basic',
-//         iconUrl: 'icon.png',
-//         title: '締切が近い！',
-//         message: `${d.company} "${d.title}" が明日締切です！`,
-//         priority: 2
-//       });
-//     }
-//   });
-// });
+// アラーム発火時に通知
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name.startsWith("alertDeadline")) {
+    notifyDeadlines(alarm.name);
+  }
+});
