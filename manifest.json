@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "就活締切リマインダー",
+  "version": "1.0",
+  "description": "就活の締切を入力して通知してくれる拡張機能",
+  "permissions": ["storage", "notifications", "alarms", "tabs"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}
