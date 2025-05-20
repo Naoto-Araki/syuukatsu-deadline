@@ -40,23 +40,7 @@ URL: ${d.url}`,
   });
 }
 
-// 過去の通知を起動時にチェックして発火（Chrome未起動時のアラーム逃しを補填）
-function checkMissedAlarms() {
-  const now = new Date();
-  const hour = now.getHours();
-  if (hour >= 18) {
-    notifyDeadlines("alertDeadlineTomorrowNoon");
-    notifyDeadlines("alertDeadlineTomorrowEvening");
-    notifyDeadlines("alertDeadlineTodayMorning");
-  } else if (hour >= 12) {
-    notifyDeadlines("alertDeadlineTomorrowNoon");
-    notifyDeadlines("alertDeadlineTodayMorning");
-  } else if (hour >= 10) {
-    notifyDeadlines("alertDeadlineTodayMorning");
-  }
-}
 
-// アラームスケジュール設定関数
 function setupAlarms() {
   // 前日の12:00 と 18:00
   scheduleDailyAlarm("alertDeadlineTomorrowNoon", 12);
