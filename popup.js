@@ -1,3 +1,8 @@
+import {
+  getAuthToken,
+  insertCalendarEvent,
+} from "./google.js";
+
 let editIndex = null;
 const saveBtn = document.getElementById("save");
 const dateInput = document.getElementById('date');
@@ -31,9 +36,18 @@ saveBtn.addEventListener("click", async () => {
     const host    = new URL(url).hostname;
     const company = host.replace(/^(www\.)/, '').split('.')[0];
     const favicon = `https://www.google.com/s2/favicons?domain=${host}`;
+    const token = await getAuthToken(true);
+
+    // カレンダー登録
+    const eventId = await insertCalendarEvent(token, {
+      summary: `[${company}] ${title}`,
+      description: `締切日: ${date}`,
+      startDate: date,
+      url,
+    });
 
     const { deadlines = [] } = await chrome.storage.local.get("deadlines");
-    const entry = { title, date, url, company, favicon };
+    const entry = { title, date, url, company, favicon, eventId };
 
     if (editIndex === null) {
       deadlines.push(entry);
