@@ -3,14 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>締切リマインダー</title>
   <link rel="stylesheet" href="styles.css" />
+  <title>締切リマインダー</title>
 </head>
 <body>
   <h3>締切登録</h3>
-  <input id="title" placeholder="タイトル（例：○○エントリー）" />
-  <input id="date" type="date" />
-  <button id="save">保存</button>
+  <div class="form-row">
+    <input id="title" placeholder="例: ○○エントリー" />
+    <input id="date" type="date" />
+    <button id="save" class="btn-save">
+      <img src="icons/save.svg" alt="保存" />
+      <span>保存</span>
+    </button>
+  </div>
   <ul id="list"></ul>
   <script src="popup.js"></script>
 </body>
