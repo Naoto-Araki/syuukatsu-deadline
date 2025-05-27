@@ -1,5 +1,23 @@
 let editIndex = null;
 const saveBtn = document.getElementById("save");
+const dateInput = document.getElementById('date');
+const dateBtn = document.getElementById('date-btn');
+const dateLabel = document.getElementById('date-label');
+
+// カレンダーボタンで date picker を開く
+dateBtn.addEventListener('click', () => {
+  if (dateInput.showPicker) {
+    dateInput.showPicker();
+  } else {
+    dateInput.focus();
+    dateInput.click();
+  }
+});
+
+// 日付選択後にラベルを更新
+dateInput.addEventListener('change', () => {
+  dateLabel.textContent = dateInput.value || '日付選択';
+});
 
 // 保存ボタン押下で締切を追加または更新
 saveBtn.addEventListener("click", async () => {
@@ -34,7 +52,8 @@ saveBtn.addEventListener("click", async () => {
 // 入力欄をクリア
 function clearInputs() {
   document.getElementById("title").value = '';
-  document.getElementById("date").value  = '';
+  dateInput.value = '';
+  dateLabel.textContent = '日付選択';
 }
 
 // リストを描画

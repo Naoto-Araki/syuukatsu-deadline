@@ -22,24 +22,17 @@ h3 {
   border: 1px solid #ccc;
   border-radius: 4px;
 }
-#date {
-  flex: 1;
-  min-width: 0;
-  padding: 4px;
-  font-size: 14px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-.btn-save {
+.btn-calendar, .btn-save {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   padding: 4px 6px;
   background-color: #f0f0f0;
+  border: 1px solid #ccc;
   border-radius: 4px;
   cursor: pointer;
 }
-.btn-save img {
+.btn-calendar img, .btn-save img {
   width: 16px;
   height: 16px;
   margin-right: 4px;
