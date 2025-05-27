@@ -42,60 +42,47 @@ async function renderList() {
   deadlines.forEach((d, i) => {
     const li = document.createElement("li");
 
-    const iconBtn = (iconName, title) => {
-      const btn = document.createElement("button");
-      btn.className = 'icon-btn';
-      btn.title = title;
-      const img = document.createElement("img");
-      img.src = `icons/${iconName}.svg`;
-      img.alt = title;
-      btn.appendChild(img);
-      return btn;
-    };
+    // テキストと favicon をまとめたリンク
+    const linkWrapper = document.createElement("a");
+    linkWrapper.href = d.url;
+    linkWrapper.target = '_blank';
+    linkWrapper.className = 'item-link';
+    linkWrapper.title = d.url;
 
     const favicon = document.createElement("img");
     favicon.src = d.favicon;
     favicon.width = 16;
     favicon.height = 16;
     favicon.className = 'favicon';
+    favicon.style.marginRight = '6px';
 
     const text = document.createElement("span");
     text.textContent = `[${d.company}] ${d.title} - ${d.date}`;
+    text.className = 'item-text';
 
-    // ページを開くアイコンは link.svg に固定
-    const viewLink = document.createElement("a");
-    viewLink.href = d.url;
-    viewLink.target = '_blank';
-    viewLink.className = 'icon-link';
-    viewLink.title = 'ページを開く';
-    const linkImg = document.createElement("img");
-    linkImg.src = 'icons/link.svg';
-    linkImg.alt = 'リンク';
-    viewLink.appendChild(linkImg);
+    linkWrapper.append(favicon, text);
 
-    const editBtn = iconBtn('edit', '編集');
+    const editBtn = document.createElement("button");
+    editBtn.className = 'icon-btn';
+    editBtn.title = '編集';
+    const editImg = document.createElement("img");
+    editImg.src = 'icons/edit.svg';
+    editImg.alt = '編集';
+    editBtn.appendChild(editImg);
     editBtn.addEventListener('click', () => startEdit(i, d));
 
-    const delBtn = iconBtn('delete', '削除');
+    const delBtn = document.createElement("button");
+    delBtn.className = 'icon-btn';
+    delBtn.title = '削除';
+    const delImg = document.createElement("img");
+    delImg.src = 'icons/delete.svg';
+    delImg.alt = '削除';
+    delBtn.appendChild(delImg);
     delBtn.addEventListener('click', () => deleteEntry(i));
 
-    li.append(favicon, text, viewLink, editBtn, delBtn);
+    li.append(linkWrapper, editBtn, delBtn);
     ul.appendChild(li);
   });
-}
-
-function startEdit(index, entry) {
-  editIndex = index;
-  document.getElementById("title").value = entry.title;
-  document.getElementById("date").value = entry.date;
-  saveBtn.querySelector('span').textContent = '更新';
-}
-
-async function deleteEntry(index) {
-  const { deadlines = [] } = await chrome.storage.local.get("deadlines");
-  deadlines.splice(index, 1);
-  await chrome.storage.local.set({ deadlines });
-  renderList();
 }
 
 renderList();
