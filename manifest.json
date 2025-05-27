@@ -3,7 +3,22 @@
   "name": "就活締切リマインダー",
   "version": "1.2",
   "description": "就活の締切管理（登録・編集・削除・通知）",
-  "permissions": ["storage", "notifications", "alarms", "tabs"],
+  "permissions": [
+    "storage",
+    "notifications",
+    "alarms",
+    "tabs",
+    "identity"
+  ],
+  "host_permissions": [
+    "https://www.googleapis.com/*"
+  ],
+  "oauth2": {
+    "client_id": "826682620326-ua1bb8t1pplran0u1b614rpb995ink4p.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/calendar.events"
+    ]
+  },
   "action": { "default_popup": "popup.html" },
   "background": { "service_worker": "background.js" },
   "web_accessible_resources": [{
