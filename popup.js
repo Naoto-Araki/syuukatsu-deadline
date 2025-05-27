@@ -22,7 +22,7 @@ dateInput.addEventListener('change', () => {
 // 保存ボタン押下で締切を追加または更新
 saveBtn.addEventListener("click", async () => {
   const title = document.getElementById("title").value.trim();
-  const date  = document.getElementById("date").value;
+  const date = dateInput.value;
   if (!title || !date) return;
 
   // 現在タブの情報を取得
@@ -38,7 +38,8 @@ saveBtn.addEventListener("click", async () => {
     if (editIndex === null) {
       deadlines.push(entry);
     } else {
-      deadlines[editIndex] = entry;
+      deadlines[editIndex].title = title;
+      deadlines[editIndex].date = data;
       editIndex = null;
       saveBtn.querySelector('span').textContent = '保存';
     }
@@ -114,7 +115,8 @@ async function renderList() {
 function startEdit(index, entry) {
   editIndex = index;
   document.getElementById("title").value = entry.title;
-  document.getElementById("date").value  = entry.date;
+  dateInput.value = entry.date;
+  dateLabel.textContent = entry.date;
   saveBtn.querySelector('span').textContent = '更新';
 }
 
