@@ -1,36 +1,56 @@
-chrome.runtime.onInstalled.addListener(() => {
-  ['12', '18'].forEach(hour => {
-    const when = new Date();
-    when.setHours(parseInt(hour), 0, 0, 0);
-    if (when.getTime() <= Date.now()) when.setDate(when.getDate() + 1);
-    chrome.alarms.create(`check${hour}`, { when: when.getTime(), periodInMinutes: 24 * 60 });
-  });
-});
+// deadline に対して個別アラームを打つ関数
+function scheduleDeadlineAlarms(id, dateStr) {
+  const base = new Date(dateStr);
 
-chrome.runtime.onStartup.addListener(() => {
-  ['12', '18'].forEach(hour => {
-    chrome.alarms.clear(`check${hour}`);
-    const when = new Date();
-    when.setHours(parseInt(hour), 0, 0, 0);
-    if (when.getTime() <= Date.now()) when.setDate(when.getDate() + 1);
-    chrome.alarms.create(`check${hour}`, { when: when.getTime(), periodInMinutes: 24 * 60 });
-  });
-});
+  // 前日12:00
+  const d1 = new Date(base);
+  d1.setDate(d1.getDate() - 1);
+  d1.setHours(12, 0, 0, 0);
+  if (d1.getTime() > Date.now()) {
+    chrome.alarms.create(`dl-${id}-1`, { when: d1.getTime() });
+  } else {
+    // 既に過ぎていれば即通知
+    notifySingleDeadline(dateStr, id, 'tomorrowNoon');
+  }
 
-chrome.alarms.onAlarm.addListener(async alarm => {
-  if (!alarm.name.startsWith('check')) return;
-  const { deadlines = [] } = await chrome.storage.local.get('deadlines');
-  const today = new Date().toISOString().split('T')[0];
+  // 前日18:00
+  const d2 = new Date(base);
+  d2.setDate(d2.getDate() - 1);
+  d2.setHours(18, 0, 0, 0);
+  if (d2.getTime() > Date.now()) {
+    chrome.alarms.create(`dl-${id}-2`, { when: d2.getTime() });
+  } else {
+    notifySingleDeadline(dateStr, id, 'tomorrowEvening');
+  }
 
-  deadlines.forEach(d => {
-    const diff = new Date(d.date) - new Date(today);
-    if (0 <= diff && diff <= 86400000) {
-      chrome.notifications.create({
-        type: 'basic',
-        iconUrl: d.favicon,
-        title: '締切が近い！',
-        message: `${d.title} の締切は ${d.date} です`
-      });
-    }
+  // 当日10:00
+  const d3 = new Date(base);
+  d3.setHours(10, 0, 0, 0);
+  if (d3.getTime() > Date.now()) {
+    chrome.alarms.create(`dl-${id}-3`, { when: d3.getTime() });
+  } else {
+    notifySingleDeadline(dateStr, id, 'todayMorning');
+  }
+}
+
+// 単発通知用ヘルパー（ID と dateStr から締切情報を取得し、1回だけ通知する）
+async function notifySingleDeadline(dateStr, id, type) {
+  const { deadlines=[] } = await chrome.storage.local.get('deadlines');
+  const d = deadlines.find(x => x.id === id);
+  if (!d) return;
+  let title, msgType;
+  if (type === 'tomorrowNoon' || type === 'tomorrowEvening') {
+    title = '締切が明日です';
+    msgType = '明日';
+  } else {
+    title = '締切が本日です';
+    msgType = '本日';
+  }
+  chrome.notifications.create({
+    type: 'basic',
+    iconUrl: 'icon.png',
+    title,
+    message: `${d.company} 「${d.title}」 の締切は${msgType}です！\nURL: ${d.url}`,
+    requireInteraction: true
   });
-});
+}
