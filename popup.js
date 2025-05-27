@@ -1,14 +1,34 @@
 let editIndex = null;
 const saveBtn = document.getElementById("save");
+const dateInput = document.getElementById('date');
+const dateBtn = document.getElementById('date-btn');
+const dateLabel = document.getElementById('date-label');
 
+// カレンダーボタンで date picker を開く
+dateBtn.addEventListener('click', () => {
+  if (dateInput.showPicker) {
+    dateInput.showPicker();
+  } else {
+    dateInput.focus();
+    dateInput.click();
+  }
+});
+
+// 日付選択後にラベルを更新
+dateInput.addEventListener('change', () => {
+  dateLabel.textContent = dateInput.value || '日付選択';
+});
+
+// 保存ボタン押下で締切を追加または更新
 saveBtn.addEventListener("click", async () => {
   const title = document.getElementById("title").value.trim();
-  const date = document.getElementById("date").value;
+  const date  = document.getElementById("date").value;
   if (!title || !date) return;
 
+  // 現在タブの情報を取得
   chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
-    const url = tabs[0].url;
-    const host = new URL(url).hostname;
+    const url     = tabs[0].url;
+    const host    = new URL(url).hostname;
     const company = host.replace(/^(www\.)/, '').split('.')[0];
     const favicon = `https://www.google.com/s2/favicons?domain=${host}`;
 
@@ -29,11 +49,14 @@ saveBtn.addEventListener("click", async () => {
   });
 });
 
+// 入力欄をクリア
 function clearInputs() {
   document.getElementById("title").value = '';
-  document.getElementById("date").value = '';
+  dateInput.value = '';
+  dateLabel.textContent = '日付選択';
 }
 
+// リストを描画
 async function renderList() {
   const { deadlines = [] } = await chrome.storage.local.get("deadlines");
   const ul = document.getElementById("list");
@@ -42,55 +65,60 @@ async function renderList() {
   deadlines.forEach((d, i) => {
     const li = document.createElement("li");
 
-    const iconBtn = (iconName, title) => {
-      const btn = document.createElement("button");
-      btn.className = 'icon-btn';
-      btn.title = title;
-      const img = document.createElement("img");
-      img.src = `icons/${iconName}.svg`;
-      img.alt = title;
-      btn.appendChild(img);
-      return btn;
-    };
+    // リンクラッパー（favicon＋テキスト全体をクリック領域に）
+    const linkWrapper = document.createElement("a");
+    linkWrapper.href   = d.url;
+    linkWrapper.target = '_blank';
+    linkWrapper.className = 'item-link';
+    linkWrapper.title = d.url;
 
-    const favicon = document.createElement("img");
-    favicon.src = d.favicon;
-    favicon.width = 16;
-    favicon.height = 16;
-    favicon.className = 'favicon';
+    const faviconEl = document.createElement("img");
+    faviconEl.src    = d.favicon;
+    faviconEl.width  = 16;
+    faviconEl.height = 16;
+    faviconEl.className = 'favicon';
+    faviconEl.style.marginRight = '6px';
 
-    const text = document.createElement("span");
-    text.textContent = `[${d.company}] ${d.title} - ${d.date}`;
+    const textEl = document.createElement("span");
+    textEl.textContent = `[${d.company}] ${d.title} - ${d.date}`;
+    textEl.className   = 'item-text';
 
-    // ページを開くアイコンは link.svg に固定
-    const viewLink = document.createElement("a");
-    viewLink.href = d.url;
-    viewLink.target = '_blank';
-    viewLink.className = 'icon-link';
-    viewLink.title = 'ページを開く';
-    const linkImg = document.createElement("img");
-    linkImg.src = 'icons/link.svg';
-    linkImg.alt = 'リンク';
-    viewLink.appendChild(linkImg);
+    linkWrapper.append(faviconEl, textEl);
 
-    const editBtn = iconBtn('edit', '編集');
+    // 編集ボタン
+    const editBtn = document.createElement("button");
+    editBtn.className = 'icon-btn';
+    editBtn.title     = '編集';
+    const editImg = document.createElement("img");
+    editImg.src = 'icons/edit.svg';
+    editImg.alt = '編集';
+    editBtn.appendChild(editImg);
     editBtn.addEventListener('click', () => startEdit(i, d));
 
-    const delBtn = iconBtn('delete', '削除');
+    // 削除ボタン
+    const delBtn = document.createElement("button");
+    delBtn.className = 'icon-btn';
+    delBtn.title     = '削除';
+    const delImg = document.createElement("img");
+    delImg.src = 'icons/delete.svg';
+    delImg.alt = '削除';
+    delBtn.appendChild(delImg);
     delBtn.addEventListener('click', () => deleteEntry(i));
 
-    li.append(favicon, text, viewLink, editBtn, delBtn);
+    li.append(linkWrapper, editBtn, delBtn);
     ul.appendChild(li);
   });
 }
 
+// 編集開始
 function startEdit(index, entry) {
   editIndex = index;
   document.getElementById("title").value = entry.title;
-  document.getElementById("date").value = entry.date;
+  document.getElementById("date").value  = entry.date;
   saveBtn.querySelector('span').textContent = '更新';
 }
 
+// 削除処理
 async function deleteEntry(index) {
   const { deadlines = [] } = await chrome.storage.local.get("deadlines");
   deadlines.splice(index, 1);
@@ -98,4 +126,5 @@ async function deleteEntry(index) {
   renderList();
 }
 
+// 初回描画
 renderList();

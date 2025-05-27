@@ -10,7 +10,11 @@
   <h3>締切登録</h3>
   <div class="form-row">
     <input id="title" placeholder="例: ○○エントリー" />
-    <input id="date" type="date" />
+    <input id="date" type="date" style="display:none;" />
+    <button id="date-btn" class="btn-calendar" title="締切日を選択">
+      <img src="icons/calendar.svg" alt="カレンダー" />
+      <span id="date-label">日付選択</span>
+    </button>
     <button id="save" class="btn-save">
       <img src="icons/save.svg" alt="保存" />
       <span>保存</span>
