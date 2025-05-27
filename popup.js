@@ -39,7 +39,7 @@ saveBtn.addEventListener("click", async () => {
       deadlines.push(entry);
     } else {
       deadlines[editIndex].title = title;
-      deadlines[editIndex].date = data;
+      deadlines[editIndex].date = date;
       editIndex = null;
       saveBtn.querySelector('span').textContent = '保存';
     }
