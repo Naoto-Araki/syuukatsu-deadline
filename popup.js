@@ -34,20 +34,19 @@ saveBtn.addEventListener("click", async () => {
   chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
     const url     = tabs[0].url;
     const host    = new URL(url).hostname;
-    const company = host.replace(/^(www\.)/, '').split('.')[0];
     const favicon = `https://www.google.com/s2/favicons?domain=${host}`;
     const token = await getAuthToken(true);
 
     // カレンダー登録
     const eventId = await insertCalendarEvent(token, {
-      summary: `[${company}] ${title}`,
+      summary: `${title}`,
       description: `締切日: ${date}`,
       startDate: date,
       url,
     });
 
     const { deadlines = [] } = await chrome.storage.local.get("deadlines");
-    const entry = { title, date, url, company, favicon, eventId };
+    const entry = { title, date, url, favicon, eventId };
 
     if (editIndex === null) {
       deadlines.push(entry);
@@ -94,7 +93,7 @@ async function renderList() {
     faviconEl.style.marginRight = '6px';
 
     const textEl = document.createElement("span");
-    textEl.textContent = `[${d.company}] ${d.title} - ${d.date}`;
+    textEl.textContent = `[${d.title} - ${d.date}`;
     textEl.className   = 'item-text';
 
     linkWrapper.append(faviconEl, textEl);
