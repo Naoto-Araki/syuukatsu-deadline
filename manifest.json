@@ -14,13 +14,12 @@
     "https://www.googleapis.com/*"
   ],
   "oauth2": {
-    "client_id": "826682620326-ua1bb8t1pplran0u1b614rpb995ink4p.apps.googleusercontent.com",
+    "client_id": "XXXX",
     "scopes": [
       "https://www.googleapis.com/auth/calendar.events"
     ]
   },
   "action": { "default_popup": "popup.html" },
-  "background": { "service_worker": "background.js" },
   "web_accessible_resources": [{
     "resources": [
       "icons/*.svg"
