@@ -13,6 +13,9 @@ export async function getAuthToken(interactive = true) {
   });
 }
 
+/**
+ * YYYY-MM-DD 文字列の翌日を返す
+ */
 function nextDay(dateStr) {
   const d = new Date(dateStr);
   d.setDate(d.getDate() + 1);
@@ -29,6 +32,7 @@ export async function insertCalendarEvent(token, { summary, description, startDa
     start: { date: startDate },
     end:   { date: nextDay(startDate) }
   };
+
   const resp = await fetch(
     "https://www.googleapis.com/calendar/v3/calendars/primary/events",
     {
@@ -47,7 +51,8 @@ export async function insertCalendarEvent(token, { summary, description, startDa
     throw new Error(`Calendar Insert Failed: ${resp.statusText}`);
   }
 
-  return JSON.parse(text).id;
+  const data = JSON.parse(text);
+  return data.id;
 }
 
 /**
@@ -58,12 +63,13 @@ export async function updateCalendarEvent(token, eventId, { summary, description
     summary,
     description: `${description}\n${url}`,
     start: { date: startDate },
-    end:   { date: startDate }
+    end:   { date: nextDay(startDate) }
   };
+
   const resp = await fetch(
     `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
     {
-      method: "PUT",  // PATCH も可
+      method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -71,8 +77,14 @@ export async function updateCalendarEvent(token, eventId, { summary, description
       body: JSON.stringify(event),
     }
   );
-  if (!resp.ok) throw new Error("Calendar Update Failed");
-  return await resp.json();
+
+  const text = await resp.text();
+  if (!resp.ok) {
+    console.error("Google Calendar Update Error:", resp.status, text);
+    throw new Error(`Calendar Update Failed: ${resp.statusText}`);
+  }
+
+  return JSON.parse(text);
 }
 
 /**
@@ -86,5 +98,10 @@ export async function deleteCalendarEvent(token, eventId) {
       headers: { Authorization: `Bearer ${token}` },
     }
   );
-  if (!resp.ok) throw new Error("Calendar Delete Failed");
+
+  if (!resp.ok) {
+    const text = await resp.text();
+    console.error("Google Calendar Delete Error:", resp.status, text);
+    throw new Error(`Calendar Delete Failed: ${resp.statusText}`);
+  }
 }
