@@ -13,9 +13,8 @@ const dateLabel  = document.getElementById('date-label');
 
 // カレンダーボタンで date picker を開く
 dateBtn.addEventListener('click', () => {
-  if (dateInput.showPicker) {
-    dateInput.showPicker();
-  } else {
+  if (dateInput.showPicker) dateInput.showPicker();
+  else {
     dateInput.focus();
     dateInput.click();
   }
@@ -29,82 +28,88 @@ dateInput.addEventListener('change', () => {
 // 保存ボタン押下で締切を追加または更新
 saveBtn.addEventListener("click", async () => {
   const title = document.getElementById("title").value.trim();
-  const date  = document.getElementById("date").value;
+  const date  = dateInput.value;
   if (!title || !date) return;
 
-  // 現在タブの情報を取得
-  chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
-    const url     = tabs[0].url;
-    const host    = new URL(url).hostname;
-    const favicon = `https://www.google.com/s2/favicons?domain=${host}`;
-    const token   = await getAuthToken(true);
+  const { deadlines = [] } = await chrome.storage.local.get("deadlines");
 
-    const entry = { title, date, url, favicon };
-    const { deadlines = [] } = await chrome.storage.local.get("deadlines");
+  if (editIndex === null) {
+    // 新規追加：タブ情報取得 → カレンダー登録 → ストレージ保存
+    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+      const url     = tabs[0].url;
+      const host    = new URL(url).hostname;
+      const favicon = `https://www.google.com/s2/favicons?domain=${host}`;
+      const token   = await getAuthToken(true);
 
-    if (editIndex === null) {
-      // 新規追加：カレンダーに登録
       const eventId = await insertCalendarEvent(token, {
         summary:     title,
         description: `締切日: ${date}`,
         startDate:   date,
         url,
       });
-      entry.eventId = eventId;
-      deadlines.push(entry);
-    } else {
-      // 編集モード：カレンダー更新
-      const old = deadlines[editIndex];
-      await updateCalendarEvent(token, old.eventId, {
-        summary:     title,
-        description: `締切日: ${date}`,
-        startDate:   date,
-        url:         old.url,
-      });
-      entry.eventId = old.eventId;
-      deadlines[editIndex] = entry;
-      editIndex = null;
-      saveBtn.querySelector('span').textContent = '保存';
-    }
 
+      deadlines.push({ title, date, url, favicon, eventId });
+      await chrome.storage.local.set({ deadlines });
+      renderList();
+      clearInputs();
+    });
+  } else {
+    // 編集モード：元のURL/favを保持して、カレンダー更新 & ストレージ更新
+    const old = deadlines[editIndex];
+    const token = await getAuthToken(false);
+
+    await updateCalendarEvent(token, old.eventId, {
+      summary:     title,
+      description: `締切日: ${date}`,
+      startDate:   date,
+      url:         old.url,
+    });
+
+    deadlines[editIndex] = {
+      title,
+      date,
+      url:       old.url,
+      favicon:   old.favicon,
+      eventId:   old.eventId,
+    };
     await chrome.storage.local.set({ deadlines });
+    // 編集状態リセット
+    editIndex = null;
+    saveBtn.querySelector('span').textContent = '保存';
     renderList();
     clearInputs();
-  });
+  }
 });
 
-// 入力欄をクリア
+// 入力欄クリア
 function clearInputs() {
   document.getElementById("title").value = '';
   dateInput.value = '';
   dateLabel.textContent = '日付選択';
 }
 
-// 編集開始
+// 編集開始セットアップ
 function startEdit(index, entry) {
   editIndex = index;
   document.getElementById("title").value = entry.title;
-  document.getElementById("date").value  = entry.date;
+  dateInput.value  = entry.date;
   dateLabel.textContent = entry.date;
   saveBtn.querySelector('span').textContent = '更新';
 }
 
-// 削除処理
+// 削除処理：カレンダー & ストレージから削除
 async function deleteEntry(index) {
   const { deadlines = [] } = await chrome.storage.local.get("deadlines");
   const d = deadlines[index];
   const token = await getAuthToken(false);
 
-  // カレンダーから削除
   await deleteCalendarEvent(token, d.eventId);
-
-  // ストレージから削除
   deadlines.splice(index, 1);
   await chrome.storage.local.set({ deadlines });
   renderList();
 }
 
-// リストを描画
+// リスト描画
 async function renderList() {
   const { deadlines = [] } = await chrome.storage.local.get("deadlines");
   const ul = document.getElementById("list");
@@ -113,7 +118,7 @@ async function renderList() {
   deadlines.forEach((d, i) => {
     const li = document.createElement("li");
 
-    // リンクラッパー（favicon＋テキスト全体をクリック可能に）
+    // リンクラッパー
     const linkWrapper = document.createElement("a");
     linkWrapper.href   = d.url;
     linkWrapper.target = '_blank';
@@ -158,5 +163,5 @@ async function renderList() {
   });
 }
 
-// 初回描画
+// 起動時描画
 renderList();
